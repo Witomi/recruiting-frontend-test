@@ -1,6 +1,6 @@
 import React from 'react'
 
-export default function Modal({ isOpen, onClose, text }) {
+export default function Modal({ isOpen, onClose, text, buttonText }) {
 	if (!isOpen) return null
 
 	return (
@@ -13,7 +13,7 @@ export default function Modal({ isOpen, onClose, text }) {
 						className="m-1 p-2 border-0 w-fit bg-indigo-500 text-white float-right text-lg leading-none font-semibold outline-none focus:outline-none"
 						onClick={onClose}
 					>
-						Seguir asignando
+						{buttonText}
 					</button>
 				</div>
 			</div>

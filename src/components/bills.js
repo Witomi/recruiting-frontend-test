@@ -17,12 +17,12 @@ export default function Bills() {
 	const [billSelected, setBillSelected] = useState(null)
 	const [creditNoteSelected, setCreditNoteSelected] = useState(null)
 	const [modalOpen, setModalOpen] = useState(false)
-	const handleBillSelected = (billId) => {
-		setBillSelected(billId)
+	const handleBillSelected = (bill) => {
+		setBillSelected(bill)
 		setCreditNoteSelected(null)
 	}
-	const handleCreditNoteSelected = (billId) => {
-		setCreditNoteSelected(billId)
+	const handleCreditNoteSelected = (bill) => {
+		setCreditNoteSelected(bill)
 	}
 	const handleOpenModal = () => {
 		setModalOpen(true)
@@ -33,12 +33,23 @@ export default function Bills() {
 		setCreditNoteSelected(null)
 	}
 
-	const bills = receivedBills
-		? receivedBills.filter((bill) => bill.type === 'received')
+	const filteredBills = receivedBills
+		? receivedBills.map((bill) => ({
+				...bill,
+				clp: bill.currency === 'CLP' ? bill.amount : DolarToClp(bill.amount),
+				usd: bill.currency === 'USD' ? bill.amount : ClpToDolar(bill.amount),
+		  }))
 		: null
-	const creditNotes = receivedBills
-		? receivedBills.filter(
-				(bill) => bill.type === 'credit_note' && bill.reference === billSelected
+
+	const bills = filteredBills
+		? filteredBills.filter((bill) => bill.type === 'received')
+		: null
+	const creditNotes = filteredBills
+		? filteredBills.filter(
+				(bill) =>
+					bill.type === 'credit_note' &&
+					billSelected &&
+					bill.reference === billSelected.id
 		  )
 		: null
 	return (
@@ -58,35 +69,26 @@ export default function Bills() {
 							key={bill.id}
 							className={`flex w-full justify-between p-2 ${
 								index !== bills.length - 1 ? 'border-b border-gray-300' : ''
-							} ${billSelected === bill.id ? 'bg-indigo-100' : ''}`}
+							} ${
+								billSelected && billSelected.id === bill.id
+									? 'bg-indigo-100'
+									: ''
+							}`}
 						>
 							<div className="flex items-center">
 								<input
 									type="radio"
 									name="selectedBill"
-									value={bill.id}
-									checked={billSelected === bill.id}
-									onChange={() => handleBillSelected(bill.id)}
+									checked={billSelected && billSelected.id === bill.id}
+									onChange={() => handleBillSelected(bill)}
 									className="form-radio mx-4"
 								/>
 								<p className="font-bold">{bill.id} </p>
 								<p className="text-gray-400 ml-1">({bill.organization_id})</p>
 							</div>
 							<div className="flex">
-								<p className="text-black-400">
-									$
-									{bill.currency === 'CLP'
-										? bill.amount
-										: DolarToClp(bill.amount)}{' '}
-									CLP
-								</p>
-								<p className="text-gray-400 ml-1">
-									($
-									{bill.currency === 'USD'
-										? bill.amount
-										: ClpToDolar(bill.amount)}{' '}
-									USD)
-								</p>
+								<p className="text-black-400">${bill.clp} CLP</p>
+								<p className="text-gray-400 ml-1">${bill.usd} USD</p>
 							</div>
 							<div>
 								<p className="text-gray-400">Recibida</p>
@@ -115,34 +117,28 @@ export default function Bills() {
 										index !== creditNotes.length - 1
 											? 'border-b border-gray-300'
 											: ''
-									} ${creditNoteSelected === bill.id ? 'bg-indigo-100' : ''}`}
+									} ${
+										creditNoteSelected && creditNoteSelected.id === bill.id
+											? 'bg-indigo-100'
+											: ''
+									}`}
 								>
 									<div className="flex items-center">
 										<input
 											type="radio"
 											name="selectedCreditNote"
-											value={bill.id}
-											checked={creditNoteSelected === bill.id}
-											onChange={() => handleCreditNoteSelected(bill.id)}
+											checked={
+												creditNoteSelected && creditNoteSelected.id === bill.id
+											}
+											onChange={() => handleCreditNoteSelected(bill)}
 											className="form-radio mx-4"
 										/>
 										<p className="font-bold">{bill.id}</p>
 										<p className="text-gray-400">({bill.organization_id})</p>
 									</div>
 									<div className="flex">
-										<p className="font-bold">
-											{bill.currency === 'CLP'
-												? bill.amount
-												: DolarToClp(bill.amount)}{' '}
-											CLP
-										</p>
-										<p className="text-gray-400">
-											($
-											{bill.currency === 'USD'
-												? bill.amount
-												: ClpToDolar(bill.amount)}{' '}
-											USD)
-										</p>
+										<p className="text-black-400">${bill.clp} CLP</p>
+										<p className="text-gray-400 ml-1">${bill.usd} USD</p>
 									</div>
 									<div>
 										<p className="text-gray-400">{bill.type}</p>
@@ -158,7 +154,7 @@ export default function Bills() {
 				)
 			) : null}
 
-			{creditNoteSelected ? (
+			{billSelected && creditNoteSelected ? (
 				<div>
 					<button
 						className="bg-indigo-500 text-white rounded-lg p-2 mt-4"
@@ -169,11 +165,40 @@ export default function Bills() {
 					<Modal
 						isOpen={modalOpen}
 						onClose={HandleCloseModal}
-						text="Nota de crédito asignada correctamente"
-					>
-						{/* Modal content */}
-						<p className="text-gray-700">This is the modal content.</p>
-					</Modal>
+						text={
+							<>
+								<div className="flex  justify-between">
+									<div className="flex flex-col">
+										<p>-</p>
+										<p className="font-bold">Nota de Crédito</p>
+										<p className="font-bold">Factura</p>
+									</div>
+									<div className="flex flex-col">
+										<p className="font-bold">Id</p>
+										<p className="mx-4">{creditNoteSelected.id}</p>
+										<p className="mx-4">{billSelected.id}</p>
+									</div>
+									<div className="flex flex-col">
+										<p className="font-bold">CLP</p>
+										<p>${creditNoteSelected.clp}</p>
+										<p>${billSelected.clp}</p>
+									</div>
+									<div className="flex flex-col">
+										<p className="font-bold">USD</p>
+										<p>${creditNoteSelected.usd}</p>
+										<p>${billSelected.usd}</p>
+									</div>
+								</div>
+								<br />
+								Monto de la Factura actualizada: $
+								{billSelected.clp - creditNoteSelected.clp} CLP ($
+								{billSelected.usd - creditNoteSelected.usd} USD)
+								<br />
+								Nota de crédito asignada correctamente
+							</>
+						}
+						buttonText="Seguir asignando"
+					/>
 				</div>
 			) : null}
 		</div>
